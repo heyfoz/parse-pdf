@@ -1,0 +1,13 @@
+{
+  "name": "parse-pdf-web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Merge PDFs and extract text, images and OCR locally in your browser.",
+  "license": "MIT",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "test": "node --test tests/web.test.mjs",
+    "start": "python3 browser/serve.py"
+  }
+}

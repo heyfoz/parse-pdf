@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pdfharvest — Merge PDFs, extract text &amp; images</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📄</text></svg>">
+</head>
+<body>
+
+<header>
+  <h1>pdfharvest</h1>
+  <span class="tag">merge + text + images + OCR</span>
+  <span class="spacer"></span>
+  <span class="tag" id="privacy">PDF files stay in your browser</span>
+  <a class="source-link" href="https://github.com/heyfoz/parse-pdf" target="_blank" rel="noopener">GitHub ↗</a>
+</header>
+
+<main>
+<div class="layout">
+
+  <!-- ============ left column ============ -->
+  <div>
+    <div class="panel">
+      <h2>Files</h2>
+      <div id="drop">
+        <strong>Drop PDFs here</strong>
+        <span>or click to choose — multiple files welcome</span>
+      </div>
+      <input type="file" id="picker" accept="application/pdf,.pdf" multiple hidden>
+      <ul id="queue"></ul>
+      <div class="row" style="margin-top:10px">
+        <button id="clearBtn" class="sm">Clear all</button>
+      </div>
+      <p class="hint" style="margin-top:12px">Use ↑ and ↓ to arrange files. All pages merge in this order.</p>
+    </div>
+
+    <div class="panel">
+      <h2>Combine PDFs</h2>
+      <div class="field">
+        <label for="mergedName">Output filename</label>
+        <input type="text" id="mergedName" value="combined.pdf">
+      </div>
+      <button id="mergeBtn" class="primary" disabled>Merge into PDF</button>
+      <p class="hint" style="margin-top:12px">Keep original pages and filled forms. Protected PDFs unlock locally; enter an opening password only if asked. The combined PDF opens without a password.</p>
+      <p id="mergeStatus" role="status" aria-live="polite"></p>
+    </div>
+
+    <div class="panel">
+      <h2>Options</h2>
+
+      <div class="field">
+        <label for="ocrMode">OCR</label>
+        <select id="ocrMode">
+          <option value="auto" selected>Auto — only pages with no text layer</option>
+          <option value="force">Force — OCR every page</option>
+          <option value="off">Off — embedded text only</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="lang">OCR language</label>
+        <select id="lang">
+          <option value="eng" selected>English</option>
+          <option value="fra">French</option>
+          <option value="deu">German</option>
+          <option value="spa">Spanish</option>
+          <option value="ita">Italian</option>
+          <option value="por">Portuguese</option>
+          <option value="nld">Dutch</option>
+          <option value="rus">Russian</option>
+          <option value="chi_sim">Chinese (simplified)</option>
+          <option value="jpn">Japanese</option>
+          <option value="kor">Korean</option>
+          <option value="ara">Arabic</option>
+        </select>
+      </div>
+      <p class="hint">Language data (~10–15&nbsp;MB) downloads once, then is cached by the browser.</p>
+
+      <div class="field">
+        <label for="dpi">Render quality for OCR — <span id="dpiOut">300</span> DPI</label>
+        <input type="range" id="dpi" min="100" max="500" step="50" value="300" style="width:100%">
+      </div>
+
+      <div class="check">
+        <input type="checkbox" id="doImages" checked>
+        <label for="doImages" style="margin:0">Extract embedded images</label>
+      </div>
+      <div class="check">
+        <input type="checkbox" id="ocrImages" checked>
+        <label for="ocrImages" style="margin:0">OCR extracted images</label>
+      </div>
+      <div class="check">
+        <input type="checkbox" id="savePages">
+        <label for="savePages" style="margin:0">Also keep a render of each page</label>
+      </div>
+
+      <div class="field">
+        <label for="minPx">Ignore images smaller than (px)</label>
+        <input type="number" id="minPx" value="48" min="0" max="4000" step="8">
+      </div>
+
+      <div class="row" style="margin-top:14px">
+        <button id="runBtn" class="primary" disabled>Extract</button>
+        <button id="cancelBtn" disabled>Cancel</button>
+      </div>
+
+      <div id="progressWrap" class="hidden">
+        <div id="bar"><div></div></div>
+        <div id="stage"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ right column ============ -->
+  <div>
+    <div class="panel">
+      <h2>Results</h2>
+      <div id="mergeResult" class="hidden merge-result">
+        <span class="tag">Combined PDF ready</span>
+        <h3 id="mergeResultName"></h3>
+        <p id="mergeResultSummary"></p>
+        <p id="mergeSignatureNote" class="hidden">Signed pages keep their appearance. Digital signatures cannot validate this merged copy; keep the original PDFs for signature verification.</p>
+        <div class="row">
+          <button id="downloadMergedBtn" class="primary">Download PDF again</button>
+          <a id="previewMergedLink" target="_blank" rel="noopener">Preview PDF</a>
+        </div>
+      </div>
+      <div id="tabs"></div>
+
+      <div id="empty" class="empty">
+        Add PDFs on the left, then choose <strong>Merge into PDF</strong> or <strong>Extract</strong>.
+      </div>
+
+      <div id="result" class="hidden">
+        <div class="stats" id="stats"></div>
+        <div id="warnings"></div>
+
+        <div class="subtabs">
+          <button data-view="transcript" class="active">Transcript</button>
+          <button data-view="gallery">Images <span id="imgCount"></span></button>
+          <button data-view="log">Log</button>
+        </div>
+
+        <div class="row" style="margin-bottom:12px">
+          <div class="segmented" id="renderToggle">
+            <button data-mode="formatted" class="active">Formatted</button>
+            <button data-mode="markdown">Markdown</button>
+          </div>
+          <button id="copyBtn" class="sm">Copy transcript</button>
+          <button id="copyAllBtn" class="sm">Copy all documents</button>
+          <button id="docxBtn" class="sm primary">Download Word (.docx)</button>
+          <button id="mdBtn" class="sm">Download .md</button>
+          <button id="txtBtn" class="sm">Download .txt</button>
+          <button id="zipBtn" class="sm">Download everything (.zip)</button>
+        </div>
+
+        <div id="view-transcript">
+          <div id="rendered" class="doc"></div>
+          <pre id="transcript" class="hidden"></pre>
+        </div>
+        <div id="view-gallery" class="hidden"><div id="gallery"></div></div>
+        <div id="view-log" class="hidden"><pre id="log"></pre></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</main>
+
+<div id="toast"></div>
+
+<dialog id="pdfPasswordDialog">
+  <form method="dialog">
+    <h2>Open protected PDF</h2>
+    <p id="pdfPasswordPrompt"></p>
+    <div class="field">
+      <label for="pdfPassword">PDF opening password</label>
+      <input type="password" id="pdfPassword" autocomplete="off" autofocus>
+    </div>
+    <p class="hint">Used only in this browser. Nothing is uploaded or saved.</p>
+    <div class="row">
+      <button value="cancel" formnovalidate>Cancel</button>
+      <button value="unlock" class="primary">Unlock and continue</button>
+    </div>
+  </form>
+</dialog>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.eggs/
+
+# pdfharvest output
+pdfharvest-out/
+out/
+tmp/
+output/
+
+# Node (browser testing only)
+node_modules/
+package-lock.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Generated test fixtures — rebuild with: python samples/make_samples.py
+samples/*.pdf
+samples/*.png
+
+# Local desktop edition and its integration checks are outside this web release.
+/LOCAL_DESKTOP.md
+/python/
+/install/
+/samples/
+/tests/test_merge.py
+/tests/browser-merge.test.mjs
